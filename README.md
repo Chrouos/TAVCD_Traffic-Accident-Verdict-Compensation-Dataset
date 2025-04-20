@@ -173,8 +173,9 @@ python ./processed_to_format.py \
 
 ## **貢獻與聯絡**
 如果您對本數據集有建議或發現錯誤，請透過以下方式聯繫我們：
-- 提交 [GitHub Issue](https://github.com/Chrouos/TAVCD-Traffic-Accident-Verdict-Compensation-Dataset-/issues)
-- 直接聯絡數據集管理員
+- 如有建議，請透過 [GitHub Issue](https://github.com/Chrouos/TAVCD-Traffic-Accident-Verdict-Compensation-Dataset-/issues) 提出。
+
+
 
 ---
 
