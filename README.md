@@ -1,183 +1,113 @@
----
-
 # TAVCD (Traffic Accident Verdict Compensation Dataset)
 
-[English Version](https://github.com/Chrouos/TAVCD-Traffic-Accident-Verdict-Compensation-Dataset-/blob/main/README_en.md)
+English | [繁體中文](./README_zh.md)
 
-## **簡介**
-TAVCD (Traffic Accident Verdict Compensation Dataset) 是針對 **台灣交通事故判決書** 進行標註的數據集，涵蓋法院判決內容、事故資訊、人員傷害、財產損失與賠償金額等詳細資訊。本數據集適用於 **學術研究、法律分析、機器學習模型訓練**，並可用於 NLP 任務，如文本分類、命名實體識別 (NER) 和資訊擷取。
+TAVCD is an annotated dataset for Taiwan traffic-accident civil verdicts.  
+It targets legal information extraction from judgment text, including accident facts, injuries, liability allocation, and compensation components.
 
-### **數據概覽**
-- **數據規模**：共 **1000** 筆裁判書
-- **標註方式**：由兩位標記者 (`Labeler_1` & `Labeler_2`) 獨立標記，確保準確性
-- **數據格式**：JSONL (`.jsonl`)
+## Dataset Snapshot
 
-### **預覽格式**
+- Size: 1,000 verdicts
+- Annotation: double annotation (`Source/Labeler_1`, `Source/Labeler_2`)
+- Format: JSONL
+- Main tasks: legal IE, NER-style extraction, judgment analytics
+
+## Directory Structure
+
+- `Source/Verdict/`: raw and cleaned verdict text
+- `Source/Labeler_1/`, `Source/Labeler_2/`: human annotations with span positions
+- `finetuning_training_data_golden.jsonl`: full structured targets per verdict
+- `finetuning_training_data.jsonl`: field-level extraction examples
+- `regular_fields.py`: canonical field definitions
+- `processed_to_format.py`: conversion utilities for training formats
+
+## Field Terminology and Legal Meaning
+
+The table below maps domain-specific Chinese labels to English terms and clarifies what each field means in Taiwan verdicts.
+
+### Core Fields (used in experiment table)
+
+| Chinese Field | English Term | Meaning in Verdict Context |
+|---|---|---|
+| 事故日期 | Accident Date | The date when the accident actually occurred (fact-finding section), not the filing or judgment date. |
+| 事發經過 | Accident Details | The narrative of how the collision happened: parties, behaviors, place, sequence, and fault-related facts. |
+| 事故車出廠日期 | Vehicle Manufacturing Date | The manufacturing/registration-era reference used for valuation and depreciation in damage calculation. |
+| 傷勢 | Injury Status | Medically described injuries recognized by the court as caused by the accident. |
+| 職業 | Occupation | The claimant's occupation used to support lost-income or earning-capacity claims. |
+| 折舊方法 | Depreciation Method | The court-accepted rule for reducing repair/parts value due to age or usage. |
+| 被告肇責 | Defendant Liability | The defendant's fault share (usually a percentage) used to apportion payable damages. |
+| 塗裝 | Coating | Coating-related repair cost component for damaged vehicle/property items. |
+| 工資 | Labor Costs | Repair labor charges recognized by the court. |
+| 烤漆 | Painting | Painting/baking-paint process cost component within repair expenses. |
+| 鈑金 | Sheet Metal | Bodywork/metal-forming repair cost component. |
+| 耐用年數 | Durable Years | Useful life period used by the court for depreciation and residual value reasoning. |
+| 修車費用 | Repair Costs | Total recognized vehicle repair amount (often aggregated from parts, labor, coating, paint, sheet metal). |
+| 賠償金額總額 | Total Compensation Amount | Final payable compensation amount determined by the judgment (before/after offsets as written by the court). |
+| 保險給付金額 | Insurance Payment Amount | Insurance amount already paid or to be offset against defendant payment obligations. |
+| 居家看護天數 | Home Care Days | Number of days for home nursing/care accepted by the court. |
+| 居家看護費用 | Home Care Amount | Total home care compensation granted by the court. |
+| 每日居家看護金額 | Daily Home Care Amount | Daily rate used by the court for home care calculation. |
+
+### Additional Common Fields
+
+| Chinese Field | English Term | Meaning in Verdict Context |
+|---|---|---|
+| 醫療費用 | Medical Expenses | Court-recognized treatment and related medical spending causally linked to the accident. |
+| 精神賠償 | Non-Pecuniary Damages | Compensation for mental suffering (pain and emotional distress). |
+| 住院看護天數 | Inpatient Care Days | Number of inpatient nursing days recognized by the court. |
+| 住院看護費用 | Inpatient Care Amount | Total inpatient nursing compensation amount. |
+| 每日住院看護金額 | Daily Inpatient Care Amount | Daily inpatient care rate used in damage calculation. |
+| 每日工作收入 | Daily Work Income | Daily earning basis used to compute work-loss claims. |
+| 工作損失天數 | Work Loss Days | Number of days the claimant could not work due to injury. |
+| 工作損失 | Work Loss Amount | Total loss-of-earnings amount accepted by the court. |
+| 每日營業收入 | Daily Business Income | Daily business revenue basis for self-employed/business loss claims. |
+| 營業損失天數 | Business Loss Days | Days of business interruption accepted by the court. |
+| 營業損失 | Business Loss Amount | Total business interruption loss amount granted. |
+| 零件 | Parts | Parts replacement cost component in repair damages. |
+| 材料 | Materials | Consumable/material cost component in repair damages. |
+| 交通費用 | Transportation Costs | Transport-related expenses causally linked to treatment, commuting, or handling accident consequences. |
+| 財產損失 | Property Damage | Non-vehicle property damage amount recognized by the court. |
+
+## JSONL Format (Example)
 
 ```json
 {
-  "input": "臺灣新北地方法院民事判決107年度重訴字第311號原告李秋義訴訟代理人李嘉民林翰榕律師被告尤于方訴訟代理人趙政揚律師（法律扶助）被告三重汽車客運股份有限公司法定代理人李博仁上列當事人間請求侵權行為損害賠償事件，原告提起刑事附帶民事訴訟，經本院刑事庭裁定移送前來（106年度原交重附民字第3號），本院於民國107年9月26日言詞辯論終結，判決如下：主文被告應連帶給付原告新臺幣壹佰貳拾捌萬肆仟柒佰柒拾元，及被告尤于方自民國一○六年十一月二十七日起、被告三重汽車客運股份有限公司自民國一○六年十一月十五日起，均至清償日止，按週年利率百分之五計算之利息。原告其餘之訴駁回。訴訟費用由被告連帶負擔百分之十二，餘由原告負擔。本判決第一項於原告以新臺幣肆拾貳萬捌仟元為被告供擔保後，得假執行；但被告如以新臺幣壹佰貳拾捌萬肆仟柒佰柒拾元為原告預供擔保，得免為假執行。原告其餘假執行之聲請駁回。事實及理由壹、程序方面一、按因犯罪而受損害之人，於刑事訴訟程序得附帶提起民事訴訟，對於被告及依民法負賠償責任之人，請求回復其損害。前項請求之範圍，依民法之規定。又附帶民事訴訟除本編有特別規定外，準用關於刑事訴訟之規定。但經移送或發回、發交於民事庭後，應適用民事訴訟法。訴狀送達後，原告不得將原訴變更或追加他訴，但擴張或減縮應受判決事項之聲明者，不在此限，刑事訴訟法第487條、第490條、民事訴訟法第255條第1項第3款分別定有明文。經查，原告原以尤于方為被告，就其由本院106年度原交易字第67號刑事業務過失傷害案件審理部分提起刑事附帶民事訴訟，依民法侵權行為之法律關係，聲明請求：1、被告應給付原告新臺幣（下同）1063萬5984元及自起訴狀繕本送達翌日起至清償日止，按週年利率百分之五計算之利息。2、請准供擔保宣告假執行（見附民卷第7至21頁）。嗣起訴狀繕本送達被告後，原告於民國106年11月6日提出民事準備狀主張系爭車禍發生時，被告尤于方為三重汽車客運股份有限公司（下稱三重客運公司）所僱用並執行職務，爰聲請追加三重客運公司為被告，暨變更原訴之聲明第1項主張被告應連帶負給付責任等語（見附民卷第113至118頁）；嗣本院刑事庭准予追加被告並裁定移送前來，原告再於107年7月23日本院言詞辯論期日中陳述變更訴之聲明為：1、被告應連帶給付原告1063萬5984元及自民事準備狀繕本送達翌日起至清償日止，按週年利率百分之五計算之利息。...",
+  "input": "Full judgment text...",
   "output": {
-    "事發經過": "被告尤于方係被告三重客運公司所屬265路線公車之司機，為從事駕駛業務之人，其於105年11月18日上午9時51分許，駕駛三重客運公司所有之車牌號碼000-00號營業用大客車（下稱本案公車），沿新北市板橋區忠孝路往四川路方向行駛，迨行至忠孝路與四川路交岔路口欲右轉駛入四川路時，竟疏未注意即貿然右轉，適原告徒步由西向東穿越四川路口之行人穿越道旁時，被告尤于方所駕駛之本案公車右前車頭與原告發生碰撞",
     "事故日期": "105年11月18日",
-    "傷勢": "受有左側近端肱骨骨折、左側股骨頸骨折之傷害",
-    "職業": "中校退伍",
-    "精神賠償": "30萬",
-    "醫療費用": "10萬9026",
-    "每日居家看護金額": "2200",
-    "居家看護天數": "361",
-    "居家看護費用": "79萬4200",
-    "每日住院看護金額": "2200",
-    "住院看護天數": "286",
-    "住院看護費用": "62萬9200",
-    "看護總額": "62萬9200",
-    "每日營業收入": "",
-    "營業損失天數": "",
-    "營業損失": "",
-    "每日工作收入": "",
-    "工作損失天數": "",
-    "工作損失": "",
-    "事故車出廠日期": "",
-    "折舊方法": "",
-    "耐用年數": "",
-    "零件": "",
-    "材料": "",
-    "工資": "",
-    "鈑金": "",
-    "塗裝": "",
-    "烤漆": "",
-    "修車費用": "",
-    "交通費用": "6萬6,870",
-    "財產損失": "",
-    "賠償金額總額": "168萬1320",
+    "事發經過": "...",
     "被告肇責": "80",
-    "保險給付金額": ""
+    "賠償金額總額": "168萬1320"
   }
 }
 ```
 
----
+## Usage
 
-## **目錄結構與數據內容**
+1. Legal compensation analysis for Taiwan traffic verdicts
+2. Supervised IE training and evaluation
+3. Prompt-based extraction benchmarking
 
-### **1. 判決書原始數據**
-> 存放於 `Source/Verdict/` 目錄，包含原始判決內容與處理後的文本。
-
-- **`judgement`**：完整判決書文本（含換行符號）
-- **`cleanJudgement`**：去除特殊符號的純文字版本
-- **`opinion`**：法官的判決內容（擷取自 `judgement`）
-- **`cleanOpinion`**：法官判決內容的純文字版本（去除特殊符號）
-
-### **2. 標註數據**
-> 位於 `Source/Labeler_1/` 和 `Source/Labeler_2/` 目錄，存放人工標註結果。
-
-- **`name`**：標註的欄位名稱（如「事故日期」、「賠償金額總額」等）
-- **`value`**：標註內容
-- **`the_surrounding_words`**：標註內容的上下文資訊
-- **`position`**：標註內容在判決書中的位置
-  - `start_position` & `end_position`（對應文本內的字元索引）
-
-### **3. 機器學習訓練數據**
-> 提供 NLP 模型訓練用數據，格式適用於資訊擷取與生成式 AI 應用。
-
-- **`finetuning_training_data_golden.jsonl`**：
-  - `input`：完整判決書內容
-  - `output`：包含所有標註欄位的 JSON 結構
-- **`finetuning_training_data.jsonl`**：
-  - `subject`：標註的欄位名稱
-  - `input`：標註內容的前後文（基於標點符號切分）
-  - `output`：擷取的內容
-
----
-
-## **程式碼**
-
-+ `regular_fields.py` - 定義標註欄位類別，例如 **事故資訊、傷勢、賠償金額** 等，以及哪些欄位需要採用，需要用欄位填入`template_fields`。
-+ `processed_to_format.py` - 轉換數據集格式，適用於不同應用場景。
-
----
-
-## **標記欄位**
-TAVCD 數據集涵蓋以下類別資訊：
-
-### **(1) 事故資訊**
-- 事故日期
-- 事發經過
-- 事故車出廠日期
-
-### **(2) 人員傷害與賠償**
-- 傷勢
-- 職業
-- 居家看護天數 / 費用 / 每日金額
-- 住院看護天數 / 費用 / 每日金額
-- 醫療費用
-- 精神賠償
-- 每日工作收入
-- 工作損失天數 / 損失金額
-
-### **(3) 車輛與財產損失**
-- 折舊方法
-- 耐用年數
-- 修車費用（塗裝 / 工資 / 烤漆 / 鈑金 / 零件 / 材料）
-- 財產損失
-- 交通費用
-
-### **(4) 判決賠償與保險給付**
-- 被告肇責比例
-- 賠償金額總額
-- 保險給付金額
-
-### **(5) 營業損失**
-- 每日營業收入
-- 營業損失天數 / 損失金額
-
-### **(6) 其他資訊**
-- 其他（特殊情況、未分類損失）
-- 備註
-
----
-
-## **使用方式**
-TAVCD 數據集可用於：
-1. **法律分析**：研究台灣法院對交通事故賠償的判決趨勢。
-2. **機器學習 / NLP 訓練**：用於判決書解析、資訊擷取與分類。
-3. **文本標註應用**：關鍵資訊標註、關係抽取、事件識別。
-
-### **簡單閱讀數據**
 ```python
 import json
 
-def load_jsonl(file_path):
-    data = []
-    with open(file_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            data.append(json.loads(line))
-    return data
-
-# 加載數據
-data = load_jsonl("finetuning_training_data_golden.jsonl")
-
-# 顯示第一筆數據
-print(json.dumps(data[0], indent=2, ensure_ascii=False))
+with open("finetuning_training_data_golden.jsonl", "r", encoding="utf-8") as f:
+    first = json.loads(next(f))
+print(first.keys())
 ```
 
-### **轉換數據格式**
 ```bash
 python ./processed_to_format.py \
-    --type format_data_text \
-    --data_path finetuning_training_data_golden.jsonl \
-    --output_path ./instruction/
+  --type format_data_text \
+  --data_path finetuning_training_data_golden.jsonl \
+  --output_path ./instruction/
 ```
 
----
+## Contact
 
-## **貢獻與聯絡**
-如果您對本數據集有建議或發現錯誤，請透過以下方式聯繫我們：
-- 如有建議，請透過 [GitHub Issue](https://github.com/Chrouos/TAVCD-Traffic-Accident-Verdict-Compensation-Dataset-/issues) 提出。
+If you find any dataset issues, please contact: `chrbezz0487@gmail.com`
 
+## License
 
-
----
-
-## **授權**
-本數據集僅供 **學術研究與非商業用途**，使用時請遵守相關法規與隱私政策。
+For academic research and non-commercial use only.  
+Please comply with applicable legal and privacy requirements.
